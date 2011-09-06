@@ -1,3 +1,4 @@
+#include <stdlib.h>
 #include <thunarx/thunarx.h>
 #include "shareman.h"
 
@@ -33,7 +34,7 @@ shareman_file_init (SharemanFile *file)
 static gchar *
 thunar_file_info_get_name (ThunarxFileInfo *file_info)
 {
-  return g_strdup (g_file_get_basename(SHAREMAN_FILE (file_info)->gfile));
+  return g_file_get_path(SHAREMAN_FILE (file_info)->gfile);
 }
 
 static gchar*
@@ -97,7 +98,7 @@ thunar_file_info_get_file_info (ThunarxFileInfo *file_info)
 {
   GError *error;
   return g_file_query_info(SHAREMAN_FILE(file_info)->gfile,
-			   "standard::*,owner::user",
+			   "*",
 			   G_FILE_QUERY_INFO_NONE,
 			   NULL,
 			   &error);
@@ -168,26 +169,35 @@ void main(int argc, char **argv)
 {
   SharemanFile *file;
   GList *flist;
+  GtkWidget *win;
+  char title[1024] = "";
   ThunarxProviderFactory* f;
+  ThunarxPropertyPage *tsp;
   GList *ps, *lp;
+  int ret = 0;
   
   gtk_init(&argc, &argv);
 
-  file = shareman_file_get("/tmp");
-  printf("Share path: %s\n", thunarx_file_info_get_name(THUNARX_FILE_INFO(file)));
-
+  file = shareman_file_get(argv[1]);
   flist = g_list_append(NULL, file);
 
+  win = gtk_window_new(GTK_WINDOW_TOPLEVEL);
+  g_signal_connect_swapped(G_OBJECT(win), "destroy",
+			   G_CALLBACK(gtk_main_quit), NULL);
+  gtk_widget_show(win);
+
   f = thunarx_provider_factory_get_default();
-  /*THUNARX_TYPE_PREFERENCES_PROVIDER*/
   ps = thunarx_provider_factory_list_providers(f, THUNARX_TYPE_PROPERTY_PAGE_PROVIDER);
 
-  for (lp = ps; lp != NULL; lp = lp->next) {
+  tsp = NULL;
+  for (lp = ps; lp != NULL && tsp == NULL; lp = lp->next) {
     GList *pgs, *lpg;
 
     pgs = thunarx_property_page_provider_get_pages(lp->data, flist);
-    for (lpg = pgs; lpg != NULL; lpg = lpg->next) {
-      printf("%p\n", lpg->data);
+    for (lpg = pgs; lpg != NULL && tsp == NULL; lpg = lpg->next) {
+      if (strncmp("TspPage", G_OBJECT_TYPE_NAME(lpg->data), 7) == 0) {
+	tsp = THUNARX_PROPERTY_PAGE(g_object_ref(lpg->data));
+      }
     }
 
     g_list_foreach (pgs, (GFunc) g_object_ref_sink, NULL);
@@ -200,7 +210,26 @@ void main(int argc, char **argv)
 
   g_object_unref(f);
 
+  if (tsp == NULL) {
+    fprintf(stderr, "Unable to found the Thunar Shares Plugin\n");
+    fprintf(stderr, "Please, check that the thunar-shares-plugin packages is installed on your system.\n");
+    ret = 1;
+  } else {
+    ret = 0;
+    gtk_container_add(GTK_CONTAINER(win), GTK_WIDGET(tsp));
+    snprintf(title,
+	     sizeof(title),
+	     "%s: %s",
+	     gtk_label_get_text(GTK_LABEL(thunarx_property_page_get_label_widget(tsp))),
+	     thunarx_file_info_get_name(THUNARX_FILE_INFO(file)));
+    gtk_window_set_title(GTK_WINDOW(win), title);
+    gtk_widget_show_all(win);
+    gtk_main();
+  }
+
   g_list_foreach (flist, (GFunc) g_object_unref, NULL);
   g_list_free (flist);
+
+  exit(ret);
 }
 
