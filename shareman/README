@@ -1,0 +1,5 @@
+Shareman is a wrapper around the thunar-shares-plugin. The command
+
+shareman <path>
+
+opens the dialog to shre the specified directory.
