@@ -1,21 +1,21 @@
 
 G_BEGIN_DECLS;
 
-#define SHAREMAN_TYPE_FILE            (thunar-plugger_file_get_type ())
-#define SHAREMAN_FILE(obj)            (G_TYPE_CHECK_INSTANCE_CAST ((obj), SHAREMAN_TYPE_FILE, SharemanFile))
+#define THUNAR_PLUGGER_TYPE_FILE            (thunar_plugger_file_get_type ())
+#define THUNAR_PLUGGER_FILE(obj)            (G_TYPE_CHECK_INSTANCE_CAST ((obj), THUNAR_PLUGGER_TYPE_FILE, ThunarPluggerFile))
 
-typedef struct _SharemanFileClass SharemanFileClass;
-typedef struct _SharemanFile      SharemanFile;
+typedef struct _ThunarPluggerFileClass ThunarPluggerFileClass;
+typedef struct _ThunarPluggerFile      ThunarPluggerFile;
 
-struct _SharemanFileClass
+struct _ThunarPluggerFileClass
 {
   GObjectClass __parent__;
 
   /* signals */
-  void (*destroy) (SharemanFile *file);
+  void (*destroy) (ThunarPluggerFile *file);
 };
 
-struct _SharemanFile
+struct _ThunarPluggerFile
 {
   GObject        __parent__;
 
@@ -23,8 +23,8 @@ struct _SharemanFile
   GFile         *gfile;
 };
 
-GType thunar-plugger_file_get_type (void) G_GNUC_CONST;
+GType thunar_plugger_file_get_type (void) G_GNUC_CONST;
 
-SharemanFile* thunar-plugger_file_get (const char *path);
+ThunarPluggerFile* thunar_plugger_file_get (const char *path);
 
 G_END_DECLS;
