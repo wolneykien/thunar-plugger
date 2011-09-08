@@ -37,7 +37,6 @@ XDT_CHECK_PACKAGE([THUNARX], [thunarx-2], [1.0.1], [
 ])
 
 AC_CONFIG_FILES([Makefile
-                 src/Makefile
-		 data/Makefile])
+                 src/Makefile])
 
 AC_OUTPUT
