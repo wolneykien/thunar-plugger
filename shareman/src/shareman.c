@@ -211,10 +211,10 @@ void main(int argc, char **argv)
   flist = g_list_append(NULL, file);
 
   win = gtk_window_new(GTK_WINDOW_TOPLEVEL);
+  gtk_window_set_position (GTK_WINDOW(win), GTK_WIN_POS_CENTER_ALWAYS);
   g_signal_connect_swapped(G_OBJECT(win), "destroy",
 			   G_CALLBACK(gtk_main_quit), NULL);
   gtk_window_set_icon_name (GTK_WINDOW(win), "gnome-fs-share");
-  gtk_widget_show(win);
 
   f = thunarx_provider_factory_get_default();
   ps = thunarx_provider_factory_list_providers(f, THUNARX_TYPE_PROPERTY_PAGE_PROVIDER);
