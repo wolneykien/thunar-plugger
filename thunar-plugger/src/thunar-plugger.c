@@ -1,32 +1,33 @@
 #include <stdlib.h>
+#include <string.h>
 #include <thunarx/thunarx.h>
 #include "thunar-plugger.h"
 
 static void
-thunar-plugger_file_dispose (GObject *object)
+thunar_plugger_file_dispose (GObject *object)
 {
 
 }
 
 static void
-thunar-plugger_file_finalize (GObject *object)
+thunar_plugger_file_finalize (GObject *object)
 {
-  SharemanFile *file = SHAREMAN_FILE (object);
+  ThunarPluggerFile *file = THUNAR_PLUGGER_FILE (object);
   g_object_unref (file->gfile);
 }
 
 static void
-thunar-plugger_file_class_init (SharemanFileClass *klass)
+thunar_plugger_file_class_init (ThunarPluggerFileClass *klass)
 {
   GObjectClass *gobject_class;
 
   gobject_class = G_OBJECT_CLASS (klass);
-  gobject_class->dispose = thunar-plugger_file_dispose;
-  gobject_class->finalize = thunar-plugger_file_finalize;
+  gobject_class->dispose = thunar_plugger_file_dispose;
+  gobject_class->finalize = thunar_plugger_file_finalize;
 }
 
 static void
-thunar-plugger_file_init (SharemanFile *file)
+thunar_plugger_file_init (ThunarPluggerFile *file)
 {
 
 }
@@ -34,13 +35,13 @@ thunar-plugger_file_init (SharemanFile *file)
 static gchar *
 thunar_file_info_get_name (ThunarxFileInfo *file_info)
 {
-  return g_file_get_path(SHAREMAN_FILE (file_info)->gfile);
+  return g_file_get_path(THUNAR_PLUGGER_FILE (file_info)->gfile);
 }
 
 static gchar*
 thunar_file_info_get_uri (ThunarxFileInfo *file_info)
 {
-  return g_file_get_uri (SHAREMAN_FILE (file_info)->gfile);
+  return g_file_get_uri (THUNAR_PLUGGER_FILE (file_info)->gfile);
 }
 
 static gchar*
@@ -49,7 +50,7 @@ thunar_file_info_get_parent_uri (ThunarxFileInfo *file_info)
   GFile *parent;
   gchar *uri = NULL;
 
-  parent = g_file_get_parent (SHAREMAN_FILE (file_info)->gfile);
+  parent = g_file_get_parent (THUNAR_PLUGGER_FILE (file_info)->gfile);
   if (G_LIKELY (parent != NULL))
     {
       uri = g_file_get_uri (parent);
@@ -62,7 +63,7 @@ thunar_file_info_get_parent_uri (ThunarxFileInfo *file_info)
 static gchar*
 thunar_file_info_get_uri_scheme (ThunarxFileInfo *file_info)
 {
-  return g_file_get_uri_scheme (SHAREMAN_FILE (file_info)->gfile);
+  return g_file_get_uri_scheme (THUNAR_PLUGGER_FILE (file_info)->gfile);
 }
 
 static gchar*
@@ -83,7 +84,7 @@ thunar_file_info_is_directory (ThunarxFileInfo *file_info)
 {
   GFileType ftype;
 
-  ftype = g_file_query_file_type(SHAREMAN_FILE (file_info)->gfile,
+  ftype = g_file_query_file_type(THUNAR_PLUGGER_FILE (file_info)->gfile,
 				 G_FILE_QUERY_INFO_NONE,
 				 NULL);
   if (G_FILE_TYPE_DIRECTORY == ftype) {
@@ -97,7 +98,7 @@ static GFileInfo *
 thunar_file_info_get_file_info (ThunarxFileInfo *file_info)
 {
   GError *error;
-  return g_file_query_info(SHAREMAN_FILE(file_info)->gfile,
+  return g_file_query_info(THUNAR_PLUGGER_FILE(file_info)->gfile,
 			   "*",
 			   G_FILE_QUERY_INFO_NONE,
 			   NULL,
@@ -108,7 +109,7 @@ static GFileInfo *
 thunar_file_info_get_filesystem_info (ThunarxFileInfo *file_info)
 {
 
-  return g_file_query_filesystem_info (SHAREMAN_FILE (file_info)->gfile, 
+  return g_file_query_filesystem_info (THUNAR_PLUGGER_FILE (file_info)->gfile, 
                                        THUNARX_FILESYSTEM_INFO_NAMESPACE,
                                        NULL, NULL);
 }
@@ -116,7 +117,7 @@ thunar_file_info_get_filesystem_info (ThunarxFileInfo *file_info)
 static GFile *
 thunar_file_info_get_location (ThunarxFileInfo *file_info)
 {
-  return g_object_ref (SHAREMAN_FILE (file_info)->gfile);
+  return g_object_ref (THUNAR_PLUGGER_FILE (file_info)->gfile);
 }
 
 static void
@@ -142,21 +143,21 @@ thunar_file_info_init (ThunarxFileInfoIface *iface)
 }
 
 void
-thunar-plugger_file_destroy (SharemanFile *file)
+thunar_plugger_file_destroy (ThunarPluggerFile *file)
 {
   g_object_run_dispose (G_OBJECT (file));
 }
 
-G_DEFINE_TYPE_WITH_CODE (SharemanFile, thunar-plugger_file, G_TYPE_OBJECT,
+G_DEFINE_TYPE_WITH_CODE (ThunarPluggerFile, thunar_plugger_file, G_TYPE_OBJECT,
     G_IMPLEMENT_INTERFACE (THUNARX_TYPE_FILE_INFO, thunar_file_info_init))
 
-SharemanFile*
-thunar-plugger_file_get (const char *path)
+ThunarPluggerFile*
+thunar_plugger_file_get (const char *path)
 {
   GFile *gfile;
-  SharemanFile *file;
+  ThunarPluggerFile *file;
 
-  file = g_object_new (SHAREMAN_TYPE_FILE, NULL);
+  file = g_object_new (THUNAR_PLUGGER_TYPE_FILE, NULL);
   gfile = g_file_new_for_commandline_arg(path);
   file->gfile = g_object_ref(gfile);
   g_object_unref (gfile);
@@ -165,14 +166,24 @@ thunar-plugger_file_get (const char *path)
 }
 
 /* Command-line options */
+
+const char *class_name = NULL;
+
 static GOptionEntry opts[] =
 {
+  { "class-name",
+    'c',
+    G_OPTION_FLAG_IN_MAIN,
+    G_OPTION_ARG_STRING,
+    &class_name,
+    "Name of the plugin page class",
+    "CLASS" },
   { NULL }
 };
 
 void main(int argc, char **argv)
 {
-  SharemanFile *file;
+  ThunarPluggerFile *file;
   GList *flist;
   GtkWidget *win;
   char title[1024] = "";
@@ -182,8 +193,9 @@ void main(int argc, char **argv)
   int ret = 0;
   GOptionContext *octx;
   GError *error = NULL;
+  int i;
 
-  octx = g_option_context_new ("DIR - display the network-sharing dialog");
+  octx = g_option_context_new ("PATH [PATH ...] - display a Thunar plugin dialog for path(s)");
   g_option_context_add_main_entries (octx, opts, NULL);
   g_option_context_add_group (octx, gtk_get_option_group (TRUE));
   if (!g_option_context_parse (octx, &argc, &argv, &error))
@@ -191,23 +203,32 @@ void main(int argc, char **argv)
       fprintf (stderr, "option parsing failed: %s\n", error->message);
       exit (1);
     }
-  
-  if (argc != 2)
+
+  if (class_name == NULL || strlen(class_name) == 0)
     {
-      fprintf (stderr, "Please, specify the path to a directory to process\n");
+      fprintf (stderr, "Specify the plugin page class name, please.\n");
+      exit (1);
+    } 
+  
+  if (argc < 2)
+    {
+      fprintf (stderr, "Please, specify one path at least.\n");
       exit (1);
     }
 
   gtk_init(&argc, &argv);
 
-  file = thunar-plugger_file_get(argv[1]);
-  flist = g_list_append(NULL, file);
+  flist = NULL;
+  for (i = 1; i < argc; i++)
+    {
+      file = thunar_plugger_file_get(argv[i]);
+      flist = g_list_append(flist, file);
+    }
 
   win = gtk_window_new(GTK_WINDOW_TOPLEVEL);
   gtk_window_set_position (GTK_WINDOW(win), GTK_WIN_POS_CENTER_ALWAYS);
   g_signal_connect_swapped(G_OBJECT(win), "destroy",
 			   G_CALLBACK(gtk_main_quit), NULL);
-  gtk_window_set_icon_name (GTK_WINDOW(win), "gnome-fs-share");
 
   f = thunarx_provider_factory_get_default();
   ps = thunarx_provider_factory_list_providers(f, THUNARX_TYPE_PROPERTY_PAGE_PROVIDER);
@@ -218,7 +239,7 @@ void main(int argc, char **argv)
 
     pgs = thunarx_property_page_provider_get_pages(lp->data, flist);
     for (lpg = pgs; lpg != NULL && tsp == NULL; lpg = lpg->next) {
-      if (strncmp("TspPage", G_OBJECT_TYPE_NAME(lpg->data), 7) == 0) {
+      if (strncmp(class_name, G_OBJECT_TYPE_NAME(lpg->data), 256) == 0) {
 	tsp = THUNARX_PROPERTY_PAGE(g_object_ref(lpg->data));
       }
     }
@@ -235,26 +256,26 @@ void main(int argc, char **argv)
 
   if (tsp == NULL) {
     GtkWidget *label;
-    if (! thunarx_file_info_is_directory (THUNARX_FILE_INFO(file)))
-      {
-	label = gtk_label_new ("The specified path is not a directory.");
-      }
-    else
-      {
-	label = gtk_label_new ("Unable to find the Thunar Shares Plugin\n"
-			       "Please, check that the thunar-shares-plugin packages is installed on your system.");
-      }
+    label = gtk_label_new ("Unable to initialize the plugin\n");
     gtk_container_add(GTK_CONTAINER(win), label);
     ret = 1;
   } else {
     ret = 0;
     gtk_container_add(GTK_CONTAINER(win), GTK_WIDGET(tsp));
-    snprintf(title,
-	     sizeof(title),
-	     "%s: %s",
-	     gtk_label_get_text(GTK_LABEL(thunarx_property_page_get_label_widget(tsp))),
-	     thunarx_file_info_get_name(THUNARX_FILE_INFO(file)));
-    gtk_window_set_title(GTK_WINDOW(win), title);
+    if (g_list_length(flist) == 1)
+      {
+	snprintf(title,
+		 sizeof(title),
+		 "%s: %s",
+		 gtk_label_get_text(GTK_LABEL(thunarx_property_page_get_label_widget(tsp))),
+		 thunarx_file_info_get_name(THUNARX_FILE_INFO(file)));
+	gtk_window_set_title(GTK_WINDOW(win), title);
+      }
+    else
+      {
+	gtk_window_set_title(GTK_WINDOW(win),
+			     gtk_label_get_text(GTK_LABEL(thunarx_property_page_get_label_widget(tsp))));
+      }
   }
 
   gtk_widget_show_all(win);
