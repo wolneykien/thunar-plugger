@@ -1,7 +1,7 @@
 
 G_BEGIN_DECLS;
 
-#define SHAREMAN_TYPE_FILE            (shareman_file_get_type ())
+#define SHAREMAN_TYPE_FILE            (thunar-plugger_file_get_type ())
 #define SHAREMAN_FILE(obj)            (G_TYPE_CHECK_INSTANCE_CAST ((obj), SHAREMAN_TYPE_FILE, SharemanFile))
 
 typedef struct _SharemanFileClass SharemanFileClass;
@@ -23,8 +23,8 @@ struct _SharemanFile
   GFile         *gfile;
 };
 
-GType shareman_file_get_type (void) G_GNUC_CONST;
+GType thunar-plugger_file_get_type (void) G_GNUC_CONST;
 
-SharemanFile* shareman_file_get (const char *path);
+SharemanFile* thunar-plugger_file_get (const char *path);
 
 G_END_DECLS;

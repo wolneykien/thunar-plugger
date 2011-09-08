@@ -1,5 +1,9 @@
-Shareman is a wrapper around the thunar-shares-plugin. The command
+Shareman is a standalone application which is able to run a Thunar plugin
+which provides a property page. The command
 
-shareman <path>
+thunar-plugger <class-name> <path> [ <path> ...]
 
-opens the dialog to shre the specified directory.
+opens the dialog with the page described by a <class-name> passing the
+remaining path options as arguments to the plugin. The class-name argument
+is the hardcoded name of the GObject class providing the ThunarxPropertyPage
+interface. To know it you probably have to look into the plugin code.

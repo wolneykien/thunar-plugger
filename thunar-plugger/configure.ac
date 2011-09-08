@@ -3,12 +3,12 @@
 
 AC_PREREQ(2.59)
 AC_COPYRIGHT([Copyright (c) 2011 Paul Wolneykien <manowar@altlinux.org>])
-AC_INIT(shareman, 1.0, manowar@altlinux.org)
-AC_CONFIG_SRCDIR([src/shareman.c])
+AC_INIT(thunar-plugger, 1.0, manowar@altlinux.org)
+AC_CONFIG_SRCDIR([src/thunar-plugger.c])
 AC_PREREQ(2.59)
 AC_CANONICAL_TARGET()
 
-AM_INIT_AUTOMAKE(shareman, 1.0)
+AM_INIT_AUTOMAKE(thunar-plugger, 1.0)
 AC_CONFIG_HEADER([config.h])
 
 # Checks for programs.

@@ -1,32 +1,32 @@
 #include <stdlib.h>
 #include <thunarx/thunarx.h>
-#include "shareman.h"
+#include "thunar-plugger.h"
 
 static void
-shareman_file_dispose (GObject *object)
+thunar-plugger_file_dispose (GObject *object)
 {
 
 }
 
 static void
-shareman_file_finalize (GObject *object)
+thunar-plugger_file_finalize (GObject *object)
 {
   SharemanFile *file = SHAREMAN_FILE (object);
   g_object_unref (file->gfile);
 }
 
 static void
-shareman_file_class_init (SharemanFileClass *klass)
+thunar-plugger_file_class_init (SharemanFileClass *klass)
 {
   GObjectClass *gobject_class;
 
   gobject_class = G_OBJECT_CLASS (klass);
-  gobject_class->dispose = shareman_file_dispose;
-  gobject_class->finalize = shareman_file_finalize;
+  gobject_class->dispose = thunar-plugger_file_dispose;
+  gobject_class->finalize = thunar-plugger_file_finalize;
 }
 
 static void
-shareman_file_init (SharemanFile *file)
+thunar-plugger_file_init (SharemanFile *file)
 {
 
 }
@@ -142,16 +142,16 @@ thunar_file_info_init (ThunarxFileInfoIface *iface)
 }
 
 void
-shareman_file_destroy (SharemanFile *file)
+thunar-plugger_file_destroy (SharemanFile *file)
 {
   g_object_run_dispose (G_OBJECT (file));
 }
 
-G_DEFINE_TYPE_WITH_CODE (SharemanFile, shareman_file, G_TYPE_OBJECT,
+G_DEFINE_TYPE_WITH_CODE (SharemanFile, thunar-plugger_file, G_TYPE_OBJECT,
     G_IMPLEMENT_INTERFACE (THUNARX_TYPE_FILE_INFO, thunar_file_info_init))
 
 SharemanFile*
-shareman_file_get (const char *path)
+thunar-plugger_file_get (const char *path)
 {
   GFile *gfile;
   SharemanFile *file;
@@ -200,7 +200,7 @@ void main(int argc, char **argv)
 
   gtk_init(&argc, &argv);
 
-  file = shareman_file_get(argv[1]);
+  file = thunar-plugger_file_get(argv[1]);
   flist = g_list_append(NULL, file);
 
   win = gtk_window_new(GTK_WINDOW_TOPLEVEL);

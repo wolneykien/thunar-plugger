@@ -1,8 +1,8 @@
 
-bin_PROGRAMS = shareman
+bin_PROGRAMS = thunar-plugger
 
-shareman_SOURCES=shareman.c
+thunar-plugger_SOURCES=thunar-plugger.c
 
-shareman_CFLAGS = $(GTK_CFLAGS)	$(GLIB_CFLAGS) $(THUNARX_CFLAGS)
+thunar-plugger_CFLAGS = $(GTK_CFLAGS)	$(GLIB_CFLAGS) $(THUNARX_CFLAGS)
 
-shareman_LDFLAGS = $(GTK_LIBS)	$(GLIB_LIBS) $(THUNARX_LIBS)
+thunar-plugger_LDFLAGS = $(GTK_LIBS)	$(GLIB_LIBS) $(THUNARX_LIBS)
