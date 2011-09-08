@@ -164,6 +164,11 @@ shareman_file_get (const char *path)
   return file;
 }
 
+/* Command-line options */
+static GOptionEntry opts[] =
+{
+  { NULL }
+};
 
 void main(int argc, char **argv)
 {
@@ -175,10 +180,34 @@ void main(int argc, char **argv)
   ThunarxPropertyPage *tsp;
   GList *ps, *lp;
   int ret = 0;
+  GOptionContext *octx;
+  GError *error = NULL;
+
+  octx = g_option_context_new ("DIR - display the network-sharing dialog");
+  g_option_context_add_main_entries (octx, opts, NULL);
+  g_option_context_add_group (octx, gtk_get_option_group (TRUE));
+  if (!g_option_context_parse (octx, &argc, &argv, &error))
+    {
+      fprintf (stderr, "option parsing failed: %s\n", error->message);
+      exit (1);
+    }
   
+  if (argc != 2)
+    {
+      fprintf (stderr, "Please, specify the path to a directory to process\n");
+      exit (1);
+    }
+
   gtk_init(&argc, &argv);
 
   file = shareman_file_get(argv[1]);
+  if (! thunarx_file_info_is_directory (THUNARX_FILE_INFO(file)))
+    {
+      fprintf (stderr, "The specified path is not a directory: %s\n",
+		 thunarx_file_info_get_name(THUNARX_FILE_INFO(file)));
+      exit (1);
+    }
+
   flist = g_list_append(NULL, file);
 
   win = gtk_window_new(GTK_WINDOW_TOPLEVEL);
