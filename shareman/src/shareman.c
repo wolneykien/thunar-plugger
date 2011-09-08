@@ -201,13 +201,6 @@ void main(int argc, char **argv)
   gtk_init(&argc, &argv);
 
   file = shareman_file_get(argv[1]);
-  if (! thunarx_file_info_is_directory (THUNARX_FILE_INFO(file)))
-    {
-      fprintf (stderr, "The specified path is not a directory: %s\n",
-		 thunarx_file_info_get_name(THUNARX_FILE_INFO(file)));
-      exit (1);
-    }
-
   flist = g_list_append(NULL, file);
 
   win = gtk_window_new(GTK_WINDOW_TOPLEVEL);
@@ -241,8 +234,17 @@ void main(int argc, char **argv)
   g_object_unref(f);
 
   if (tsp == NULL) {
-    fprintf(stderr, "Unable to find the Thunar Shares Plugin\n");
-    fprintf(stderr, "Please, check that the thunar-shares-plugin packages is installed on your system.\n");
+    GtkWidget *label;
+    if (! thunarx_file_info_is_directory (THUNARX_FILE_INFO(file)))
+      {
+	label = gtk_label_new ("The specified path is not a directory.");
+      }
+    else
+      {
+	label = gtk_label_new ("Unable to find the Thunar Shares Plugin\n"
+			       "Please, check that the thunar-shares-plugin packages is installed on your system.");
+      }
+    gtk_container_add(GTK_CONTAINER(win), label);
     ret = 1;
   } else {
     ret = 0;
@@ -253,9 +255,10 @@ void main(int argc, char **argv)
 	     gtk_label_get_text(GTK_LABEL(thunarx_property_page_get_label_widget(tsp))),
 	     thunarx_file_info_get_name(THUNARX_FILE_INFO(file)));
     gtk_window_set_title(GTK_WINDOW(win), title);
-    gtk_widget_show_all(win);
-    gtk_main();
   }
+
+  gtk_widget_show_all(win);
+  gtk_main();
 
   g_list_foreach (flist, (GFunc) g_object_unref, NULL);
   g_list_free (flist);
