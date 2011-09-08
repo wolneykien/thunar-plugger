@@ -213,6 +213,7 @@ void main(int argc, char **argv)
   win = gtk_window_new(GTK_WINDOW_TOPLEVEL);
   g_signal_connect_swapped(G_OBJECT(win), "destroy",
 			   G_CALLBACK(gtk_main_quit), NULL);
+  gtk_window_set_icon_name (GTK_WINDOW(win), "gnome-fs-share");
   gtk_widget_show(win);
 
   f = thunarx_provider_factory_get_default();
