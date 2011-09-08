@@ -1,4 +1,4 @@
-Shareman is a standalone application which is able to run a Thunar plugin
+ThunarPlugger is a standalone application which is able to run a Thunar plugin
 which provides a property page. The command
 
 thunar-plugger <class-name> <path> [ <path> ...]
