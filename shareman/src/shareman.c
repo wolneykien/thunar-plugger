@@ -240,7 +240,7 @@ void main(int argc, char **argv)
   g_object_unref(f);
 
   if (tsp == NULL) {
-    fprintf(stderr, "Unable to found the Thunar Shares Plugin\n");
+    fprintf(stderr, "Unable to find the Thunar Shares Plugin\n");
     fprintf(stderr, "Please, check that the thunar-shares-plugin packages is installed on your system.\n");
     ret = 1;
   } else {
