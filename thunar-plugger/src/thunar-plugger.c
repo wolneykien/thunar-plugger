@@ -331,7 +331,8 @@ get_actions_page (ThunarxProviderFactory* f,
     }
   else
     {
-      return 0;
+      gtk_container_add(GTK_CONTAINER(vbox), gtk_label_new ("No actions available"));
+      return 1;
     }
 }
 
