@@ -318,6 +318,7 @@ void main(int argc, char **argv)
     gtk_container_add(GTK_CONTAINER(win), label);
   } else {
     gtk_container_add(GTK_CONTAINER(win), GTK_WIDGET(page));
+    g_object_unref(page);
     gtk_window_set_title(GTK_WINDOW(win), title);
   }
 
