@@ -238,12 +238,12 @@ get_actions_page (ThunarxProviderFactory* f,
 		  gboolean dirs_as_files,
 		  GtkWindow *win,
 		  const char *class_name,
-		  GtkWidget **vbox,
+		  GtkWidget **page,
 		  char *title,
 		  int tlen)
 {
   GList *ps, *lp, *files, *dirs, *fas, *das, *as;
-  GtkWidget *topl;
+  GtkWidget *vbox;
 
   files = NULL;
   dirs = NULL;
@@ -272,9 +272,11 @@ get_actions_page (ThunarxProviderFactory* f,
   snprintf(title, tlen, "Choose actions for %i selected objects\n",
 	   g_list_length(files) + g_list_length(dirs));
   
-  *vbox = gtk_vbox_new(TRUE, 10);
-  topl = gtk_label_new (title);
-  gtk_container_add(GTK_CONTAINER(*vbox), GTK_WIDGET(topl));
+  *page = gtk_frame_new (title);
+  gtk_container_set_border_width (GTK_CONTAINER(*page), 10);
+  vbox = gtk_vbox_new(TRUE, 10);
+  gtk_container_set_border_width (GTK_CONTAINER(vbox), 10);
+  gtk_container_add(GTK_CONTAINER(*page), GTK_WIDGET(vbox));
 
   fas = NULL;
   das = NULL;
@@ -318,7 +320,7 @@ get_actions_page (ThunarxProviderFactory* f,
 
 	  b = gtk_button_new ();
 	  gtk_action_connect_proxy (GTK_ACTION(ap->data), b);
-	  gtk_container_add(GTK_CONTAINER(*vbox), GTK_WIDGET(b));
+	  gtk_container_add(GTK_CONTAINER(vbox), GTK_WIDGET(b));
 	  g_signal_connect_object (G_OBJECT(b),
 				   "clicked",
 				   G_CALLBACK(gtk_widget_destroy),
