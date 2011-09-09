@@ -1,0 +1,12 @@
+[Desktop Entry]
+Name=Dropbox actions
+Name[ru]=Операции Dropbox
+Comment=Dropbox actions for files
+Comment[ru]=Операции Dropbox с файлами
+Exec=thunar-plugger -m -c TdpProvider -F %U
+Icon=dropbox
+Terminal=false
+Type=Application
+StartupNotify=true
+MimeType=any/any;
+Categories=GTK;Utility;
