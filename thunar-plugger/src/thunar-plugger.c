@@ -218,11 +218,127 @@ get_property_page (ThunarxProviderFactory* f,
   return *pp != NULL;
 }
 
+GList*
+g_list_merge (GList *dst, GList *src)
+{
+  for (src; src != NULL; src = src->next)
+    {
+      if (g_list_find(dst, src->data) == NULL)
+	{
+	  dst = g_list_append(dst, g_object_ref(src->data));
+	}
+    }
+
+  return dst;
+}
+
+int
+get_actions_page (ThunarxProviderFactory* f,
+		  GList *flist,
+		  gboolean dirs_as_files,
+		  GtkWindow *win,
+		  const char *class_name,
+		  GtkWidget **vbox,
+		  char *title,
+		  int tlen)
+{
+  GList *ps, *lp, *files, *dirs, *fas, *das, *as;
+  GtkWidget *topl;
+
+  files = NULL;
+  dirs = NULL;
+
+  if (! dirs_as_files)
+    {
+      for (flist; flist != NULL; flist = flist->next)
+	{
+	  if (thunarx_file_info_is_directory(THUNARX_FILE_INFO(flist->data)))
+	    {
+	      dirs = g_list_append(dirs, flist->data);
+	    }
+	  else
+	    {
+	      files = g_list_append(files, flist->data);
+	    }
+	}
+    }
+  else
+    {
+      files = flist;
+    }
+
+  ps = thunarx_provider_factory_list_providers(f, THUNARX_TYPE_MENU_PROVIDER);
+
+  snprintf(title, tlen, "Choose actions for %i selected objects\n",
+	   g_list_length(files) + g_list_length(dirs));
+  
+  *vbox = gtk_vbox_new(TRUE, 10);
+  topl = gtk_label_new (title);
+  gtk_container_add(GTK_CONTAINER(*vbox), GTK_WIDGET(topl));
+
+  fas = NULL;
+  das = NULL;
+  for (lp = ps; lp != NULL; lp = lp->next)
+    {
+      GList *dp, *as;
+      if (strncmp(class_name, G_OBJECT_TYPE_NAME(lp->data), 256) == 0) {
+	as = thunarx_menu_provider_get_file_actions(lp->data,
+						    GTK_WIDGET(win),
+						    files);
+	fas = g_list_merge(fas, as);
+	for (dp = dirs; dp != NULL; dp = dp->next)
+	  {
+	    GList *as;
+	    as = thunarx_menu_provider_get_folder_actions(lp->data,
+							  GTK_WIDGET(win),
+							  dp->data);
+	    das = g_list_merge(das, as);
+	    g_list_foreach (as, (GFunc) g_object_unref, NULL);
+	    g_list_free (as);
+	  }
+	g_list_foreach (as, (GFunc) g_object_unref, NULL);
+	g_list_free (as);
+      }
+    }
+
+  g_list_foreach (ps, (GFunc) g_object_unref, NULL);
+  g_list_free (ps);
+
+  fas = g_list_merge(fas, das);
+  g_list_foreach (das, (GFunc) g_object_unref, NULL);
+  g_list_free (das);
+  
+  if (g_list_length(fas) > 0)
+    {
+      GList *ap;
+
+      for (ap = fas; ap != NULL; ap = ap->next)
+	{
+	  GtkWidget *b;
+
+	  b = gtk_button_new ();
+	  gtk_action_connect_proxy (GTK_ACTION(ap->data), b);
+	  gtk_container_add(GTK_CONTAINER(*vbox), GTK_WIDGET(b));
+	  g_signal_connect_object (G_OBJECT(b),
+				   "clicked",
+				   G_CALLBACK(gtk_widget_destroy),
+				   win,
+				   G_CONNECT_AFTER | G_CONNECT_SWAPPED);
+	}
+      return 1;
+    }
+  else
+    {
+      return 0;
+    }
+}
+
 /* Command-line options */
 
 const char *class_name = NULL;
 gboolean page_mode = FALSE;
 gboolean menu_mode = FALSE;
+gboolean dirs_as_files = FALSE;
 
 static GOptionEntry opts[] =
 {
@@ -246,6 +362,13 @@ static GOptionEntry opts[] =
     G_OPTION_ARG_NONE,
     &menu_mode,
     "Search for a menu",
+    NULL },
+  { "dirs-as-files",
+    'F',
+    G_OPTION_FLAG_IN_MAIN,
+    G_OPTION_ARG_NONE,
+    &dirs_as_files,
+    "Treat directories as files",
     NULL },
   { NULL }
 };
@@ -309,17 +432,23 @@ void main(int argc, char **argv)
     {
       ret = ! get_property_page(f, flist, class_name, &page, title, sizeof(title));
     }
+  else if (menu_mode)
+    {
+      ret = ! get_actions_page (f, flist, dirs_as_files, GTK_WINDOW(win), class_name, &page, title, sizeof(title));
+    }
 
   g_object_unref(f);
 
-  if (page == NULL) {
+  if (page == NULL || ret) {
     GtkWidget *label;
     label = gtk_label_new ("Unable to initialize the plugin\n");
     gtk_container_add(GTK_CONTAINER(win), label);
   } else {
     gtk_container_add(GTK_CONTAINER(win), GTK_WIDGET(page));
-    g_object_unref(page);
-    gtk_window_set_title(GTK_WINDOW(win), title);
+    if (strlen(title) > 0)
+      {
+	gtk_window_set_title(GTK_WINDOW(win), title);
+      }
   }
 
   gtk_widget_show_all(win);
