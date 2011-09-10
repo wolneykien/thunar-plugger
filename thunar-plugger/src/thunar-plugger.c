@@ -269,7 +269,7 @@ get_actions_page (ThunarxProviderFactory* f,
 
   ps = thunarx_provider_factory_list_providers(f, THUNARX_TYPE_MENU_PROVIDER);
 
-  snprintf(title, tlen, "Choose actions for %i selected objects\n",
+  snprintf(title, tlen, "Choose an action for the %i selected object(s)\n",
 	   g_list_length(files) + g_list_length(dirs));
   
   *page = gtk_frame_new (title);
