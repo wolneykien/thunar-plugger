@@ -35,7 +35,7 @@ thunar_plugger_file_init (ThunarPluggerFile *file)
 static gchar *
 thunar_file_info_get_name (ThunarxFileInfo *file_info)
 {
-  return g_file_get_path(THUNAR_PLUGGER_FILE (file_info)->gfile);
+  return g_file_get_basename(THUNAR_PLUGGER_FILE (file_info)->gfile);
 }
 
 static gchar*
