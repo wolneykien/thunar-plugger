@@ -35,7 +35,7 @@ thunar_plugger_file_init (ThunarPluggerFile *file)
 static gchar *
 thunar_file_info_get_name (ThunarxFileInfo *file_info)
 {
-  return g_file_get_path(THUNAR_PLUGGER_FILE (file_info)->gfile);
+  return g_file_get_basename(THUNAR_PLUGGER_FILE (file_info)->gfile);
 }
 
 static gchar*
@@ -165,9 +165,209 @@ thunar_plugger_file_get (const char *path)
   return file;
 }
 
+/* Try to adjust some buttons to close the window on click */
+void
+adjust_destroy (GtkWidget *widget, GtkWindow *win)
+{
+        if (GTK_IS_BUTTON(widget) && \
+	    gtk_button_get_use_stock (GTK_BUTTON(widget)) && \
+	    (strncmp (gtk_button_get_label (GTK_BUTTON(widget)), "gtk-apply", 9) == 0 || \
+	     strncmp (gtk_button_get_label (GTK_BUTTON(widget)), "gtk-cancel", 10) == 0 || \
+	     strncmp (gtk_button_get_label (GTK_BUTTON(widget)), "gtk-close", 9) == 0))
+	{
+		g_signal_connect_object (G_OBJECT(widget),
+					 "clicked",
+					 G_CALLBACK(gtk_widget_destroy),
+					 G_OBJECT(win),
+					 G_CONNECT_AFTER | G_CONNECT_SWAPPED);
+	}
+	else if (GTK_IS_CONTAINER(widget))
+	{
+		gtk_container_foreach (widget, adjust_destroy, win);
+	}
+}
+
+int
+get_property_page (ThunarxProviderFactory* f,
+		   GList *flist,
+		   const char *class_name,
+		   GtkWidget **pp,
+		   char *title,
+		   int tlen,
+		   GtkWindow *win)
+{
+  GList *ps, *lp;
+
+  ps = thunarx_provider_factory_list_providers(f, THUNARX_TYPE_PROPERTY_PAGE_PROVIDER);
+
+  *pp = NULL;
+  for (lp = ps; lp != NULL; lp = lp->next) {
+    GList *pgs, *lpg;
+
+    pgs = thunarx_property_page_provider_get_pages(lp->data, flist);
+    for (lpg = pgs; lpg != NULL && *pp == NULL; lpg = lpg->next) {
+      if (strncmp(class_name, G_OBJECT_TYPE_NAME(lpg->data), 256) == 0) {
+	*pp = GTK_WIDGET(g_object_ref(lpg->data));
+      }
+    }
+
+    g_list_foreach (pgs, (GFunc) g_object_ref_sink, NULL);
+    g_list_foreach (pgs, (GFunc) g_object_unref, NULL);
+    g_list_free (pgs);
+  }
+
+  g_list_foreach (ps, (GFunc) g_object_unref, NULL);
+  g_list_free (ps);
+
+  if (*pp != NULL)
+    {
+      if (g_list_length(flist) == 1)
+	{
+	  snprintf(title,
+		   tlen,
+		   "%s: %s",
+		   gtk_label_get_text(GTK_LABEL(thunarx_property_page_get_label_widget(THUNARX_PROPERTY_PAGE(*pp)))),
+		   thunarx_file_info_get_name(THUNARX_FILE_INFO(flist->data)));
+      }
+    else
+      {
+	snprintf(title,
+		 tlen,
+		 "%s",
+		 gtk_label_get_text(GTK_LABEL(thunarx_property_page_get_label_widget(THUNARX_PROPERTY_PAGE(*pp)))));
+      }
+
+      /* Try to adjust some buttons to close the window on click */
+      gtk_container_foreach (*pp, adjust_destroy, win);
+    }
+
+  return *pp != NULL;
+}
+
+GList*
+g_list_merge (GList *dst, GList *src)
+{
+  for (src; src != NULL; src = src->next)
+    {
+      if (g_list_find(dst, src->data) == NULL)
+	{
+	  dst = g_list_append(dst, g_object_ref(src->data));
+	}
+    }
+
+  return dst;
+}
+
+int
+get_actions_page (ThunarxProviderFactory* f,
+		  GList *flist,
+		  gboolean dirs_as_files,
+		  GtkWindow *win,
+		  const char *class_name,
+		  GtkWidget **page,
+		  char *title,
+		  int tlen)
+{
+  GList *ps, *lp, *files, *dirs, *fas, *das, *as;
+  GtkWidget *vbox;
+
+  files = NULL;
+  dirs = NULL;
+
+  if (! dirs_as_files)
+    {
+      for (flist; flist != NULL; flist = flist->next)
+	{
+	  if (thunarx_file_info_is_directory(THUNARX_FILE_INFO(flist->data)))
+	    {
+	      dirs = g_list_append(dirs, flist->data);
+	    }
+	  else
+	    {
+	      files = g_list_append(files, flist->data);
+	    }
+	}
+    }
+  else
+    {
+      files = flist;
+    }
+
+  ps = thunarx_provider_factory_list_providers(f, THUNARX_TYPE_MENU_PROVIDER);
+
+  snprintf(title, tlen, "Choose an action for the %i selected object(s)\n",
+	   g_list_length(files) + g_list_length(dirs));
+  
+  *page = gtk_frame_new (title);
+  gtk_container_set_border_width (GTK_CONTAINER(*page), 10);
+  vbox = gtk_vbox_new(TRUE, 10);
+  gtk_container_set_border_width (GTK_CONTAINER(vbox), 10);
+  gtk_container_add(GTK_CONTAINER(*page), GTK_WIDGET(vbox));
+
+  fas = NULL;
+  das = NULL;
+  for (lp = ps; lp != NULL; lp = lp->next)
+    {
+      GList *dp, *as;
+      if (strncmp(class_name, G_OBJECT_TYPE_NAME(lp->data), 256) == 0) {
+	as = thunarx_menu_provider_get_file_actions(lp->data,
+						    GTK_WIDGET(win),
+						    files);
+	fas = g_list_merge(fas, as);
+	for (dp = dirs; dp != NULL; dp = dp->next)
+	  {
+	    GList *as;
+	    as = thunarx_menu_provider_get_folder_actions(lp->data,
+							  GTK_WIDGET(win),
+							  dp->data);
+	    das = g_list_merge(das, as);
+	    g_list_foreach (as, (GFunc) g_object_unref, NULL);
+	    g_list_free (as);
+	  }
+	g_list_foreach (as, (GFunc) g_object_unref, NULL);
+	g_list_free (as);
+      }
+    }
+
+  g_list_foreach (ps, (GFunc) g_object_unref, NULL);
+  g_list_free (ps);
+
+  fas = g_list_merge(fas, das);
+  g_list_foreach (das, (GFunc) g_object_unref, NULL);
+  g_list_free (das);
+  
+  if (g_list_length(fas) > 0)
+    {
+      GList *ap;
+
+      for (ap = fas; ap != NULL; ap = ap->next)
+	{
+	  GtkWidget *b;
+
+	  b = gtk_button_new ();
+	  gtk_action_connect_proxy (GTK_ACTION(ap->data), b);
+	  gtk_container_add(GTK_CONTAINER(vbox), GTK_WIDGET(b));
+	  g_signal_connect_object (G_OBJECT(b),
+				   "clicked",
+				   G_CALLBACK(gtk_widget_destroy),
+				   win,
+				   G_CONNECT_AFTER | G_CONNECT_SWAPPED);
+	}
+      return 1;
+    }
+  else
+    {
+      gtk_container_add(GTK_CONTAINER(vbox), gtk_label_new ("No actions available"));
+      return 1;
+    }
+}
+
 /* Command-line options */
 
 const char *class_name = NULL;
+gboolean page_mode = FALSE;
+gboolean menu_mode = FALSE;
+gboolean dirs_as_files = FALSE;
 
 static GOptionEntry opts[] =
 {
@@ -176,8 +376,29 @@ static GOptionEntry opts[] =
     G_OPTION_FLAG_IN_MAIN,
     G_OPTION_ARG_STRING,
     &class_name,
-    "Name of the plugin page class",
+    "Name of the plugin object class",
     "CLASS" },
+  { "page",
+    'p',
+    G_OPTION_FLAG_IN_MAIN,
+    G_OPTION_ARG_NONE,
+    &page_mode,
+    "Search for a property page",
+    NULL },
+  { "menu",
+    'm',
+    G_OPTION_FLAG_IN_MAIN,
+    G_OPTION_ARG_NONE,
+    &menu_mode,
+    "Search for a menu",
+    NULL },
+  { "dirs-as-files",
+    'F',
+    G_OPTION_FLAG_IN_MAIN,
+    G_OPTION_ARG_NONE,
+    &dirs_as_files,
+    "Treat directories as files",
+    NULL },
   { NULL }
 };
 
@@ -188,8 +409,7 @@ void main(int argc, char **argv)
   GtkWidget *win;
   char title[1024] = "";
   ThunarxProviderFactory* f;
-  ThunarxPropertyPage *tsp;
-  GList *ps, *lp;
+  GtkWidget *page;
   int ret = 0;
   GOptionContext *octx;
   GError *error = NULL;
@@ -231,50 +451,32 @@ void main(int argc, char **argv)
 			   G_CALLBACK(gtk_main_quit), NULL);
 
   f = thunarx_provider_factory_get_default();
-  ps = thunarx_provider_factory_list_providers(f, THUNARX_TYPE_PROPERTY_PAGE_PROVIDER);
 
-  tsp = NULL;
-  for (lp = ps; lp != NULL && tsp == NULL; lp = lp->next) {
-    GList *pgs, *lpg;
-
-    pgs = thunarx_property_page_provider_get_pages(lp->data, flist);
-    for (lpg = pgs; lpg != NULL && tsp == NULL; lpg = lpg->next) {
-      if (strncmp(class_name, G_OBJECT_TYPE_NAME(lpg->data), 256) == 0) {
-	tsp = THUNARX_PROPERTY_PAGE(g_object_ref(lpg->data));
-      }
+  page = NULL;
+  if (!page_mode && !menu_mode)
+    {
+      page_mode = TRUE;
     }
-
-    g_list_foreach (pgs, (GFunc) g_object_ref_sink, NULL);
-    g_list_foreach (pgs, (GFunc) g_object_unref, NULL);
-    g_list_free (pgs);
-  }
-
-  g_list_foreach (ps, (GFunc) g_object_unref, NULL);
-  g_list_free (ps);
+  if (page_mode)
+    {
+      ret = ! get_property_page(f, flist, class_name, &page, title, sizeof(title), GTK_WINDOW(win));
+    }
+  else if (menu_mode)
+    {
+      ret = ! get_actions_page (f, flist, dirs_as_files, GTK_WINDOW(win), class_name, &page, title, sizeof(title));
+    }
 
   g_object_unref(f);
 
-  if (tsp == NULL) {
+  if (page == NULL || ret) {
     GtkWidget *label;
     label = gtk_label_new ("Unable to initialize the plugin\n");
     gtk_container_add(GTK_CONTAINER(win), label);
-    ret = 1;
   } else {
-    ret = 0;
-    gtk_container_add(GTK_CONTAINER(win), GTK_WIDGET(tsp));
-    if (g_list_length(flist) == 1)
+    gtk_container_add(GTK_CONTAINER(win), GTK_WIDGET(page));
+    if (strlen(title) > 0)
       {
-	snprintf(title,
-		 sizeof(title),
-		 "%s: %s",
-		 gtk_label_get_text(GTK_LABEL(thunarx_property_page_get_label_widget(tsp))),
-		 thunarx_file_info_get_name(THUNARX_FILE_INFO(file)));
 	gtk_window_set_title(GTK_WINDOW(win), title);
-      }
-    else
-      {
-	gtk_window_set_title(GTK_WINDOW(win),
-			     gtk_label_get_text(GTK_LABEL(thunarx_property_page_get_label_widget(tsp))));
       }
   }
 
