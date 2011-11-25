@@ -165,13 +165,36 @@ thunar_plugger_file_get (const char *path)
   return file;
 }
 
+/* Try to adjust some buttons to close the window on click */
+void
+adjust_destroy (GtkWidget *widget, GtkWindow *win)
+{
+        if (GTK_IS_BUTTON(widget) && \
+	    gtk_button_get_use_stock (GTK_BUTTON(widget)) && \
+	    (strncmp (gtk_button_get_label (GTK_BUTTON(widget)), "gtk-apply", 9) == 0 || \
+	     strncmp (gtk_button_get_label (GTK_BUTTON(widget)), "gtk-cancel", 10) == 0 || \
+	     strncmp (gtk_button_get_label (GTK_BUTTON(widget)), "gtk-close", 9) == 0))
+	{
+		g_signal_connect_object (G_OBJECT(widget),
+					 "clicked",
+					 G_CALLBACK(gtk_widget_destroy),
+					 G_OBJECT(win),
+					 G_CONNECT_AFTER | G_CONNECT_SWAPPED);
+	}
+	else if (GTK_IS_CONTAINER(widget))
+	{
+		gtk_container_foreach (widget, adjust_destroy, win);
+	}
+}
+
 int
 get_property_page (ThunarxProviderFactory* f,
 		   GList *flist,
 		   const char *class_name,
 		   GtkWidget **pp,
 		   char *title,
-		   int tlen)
+		   int tlen,
+		   GtkWindow *win)
 {
   GList *ps, *lp;
 
@@ -213,6 +236,9 @@ get_property_page (ThunarxProviderFactory* f,
 		 "%s",
 		 gtk_label_get_text(GTK_LABEL(thunarx_property_page_get_label_widget(THUNARX_PROPERTY_PAGE(*pp)))));
       }
+
+      /* Try to adjust some buttons to close the window on click */
+      gtk_container_foreach (*pp, adjust_destroy, win);
     }
 
   return *pp != NULL;
@@ -433,7 +459,7 @@ void main(int argc, char **argv)
     }
   if (page_mode)
     {
-      ret = ! get_property_page(f, flist, class_name, &page, title, sizeof(title));
+      ret = ! get_property_page(f, flist, class_name, &page, title, sizeof(title), GTK_WINDOW(win));
     }
   else if (menu_mode)
     {
